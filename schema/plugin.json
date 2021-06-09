@@ -1,0 +1,8 @@
+{
+  "jupyter.lab.shortcuts": [],
+  "title": "AWSMonitor",
+  "description": "AWSMonitor settings.",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}
