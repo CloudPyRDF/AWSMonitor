@@ -47,6 +47,8 @@
   },
   "dependencies": {
     "@jupyterlab/application": "^3.0.0",
+    "@jupyterlab/cells": "^3.0.11",
+    "@jupyterlab/notebook": "^3.0.11",
     "@jupyterlab/settingregistry": "^3.0.0"
   },
   "devDependencies": {
