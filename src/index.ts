@@ -33,6 +33,8 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 
 	lastOutput: string;
 
+    monitorHTLM: HTMLDivElement;
+
 	createNew(panel: NotebookPanel, context: DocumentRegistry.IContext<INotebookModel>): IDisposable {
 		// Create the toolbar button
 		let monitorButton = new ToolbarButton({
@@ -42,6 +44,7 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 
 		this.info = "Searching for a cell with PyRDF call...";
 		this.dialogOpened = false;
+        
 
 		// Add the toolbar button to the notebook toolbar
 		panel.toolbar.addItem('Monitor', monitorButton);
@@ -98,6 +101,7 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 				this.selectedCell = cell;
 				this.addListener();
 				this.setInfo("Cell found");
+                this.insertAWSMonitor();
 				break;
 			}
 		}
@@ -106,10 +110,69 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 		}
 	}
 
+    insertAWSMonitor(): void {
+        var cellsFromDomModel = document.getElementsByClassName('lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper');
+
+        let cellWithAnnotationFound = false;
+        let cell = null;
+        for(let i = 0; i < cellsFromDomModel.length && cellWithAnnotationFound == false; i++) {
+            cell = cellsFromDomModel.item(i);
+            const commentElementsInsideCell = cell.getElementsByClassName('cm-comment');
+            console.log("Comment cell found");
+
+            for(let j = 0; j < commentElementsInsideCell.length && cellWithAnnotationFound == false; j++) {
+                if(commentElementsInsideCell.item(j).innerHTML == '#@monitor') {
+                    cellWithAnnotationFound = true
+                    console.log("Cell with monitor annotation found");
+                }
+            }
+        }
+
+        if(cellWithAnnotationFound) {
+            this.monitorHTLM = document.createElement('div');
+            this.monitorHTLM.id = 'monitor';
+            this.monitorHTLM.innerHTML = 
+                '<div style="display: flex; justify-content: center; align-items: center">' +
+                    '<div style="height: 200px; width: 500px;">' +
+                        '<div style="height: 35px; width: 495px; background-color: #ffb029; display: flex; flex-direction: row; justify-content: left; align-items: center; padding-left: 5px">' +
+                            '<text style="font-weight: 900; margin-right: 30px">AWSMonitor</text>' +
+                            '<text style="font-weight: 900">Partitions: 64</text>' +
+                        '</div>' +
+                        '<div style="height: 35px; width: 440px; background-color: #d6d6d6; display: flex; flex-direction: row; justify-content: space-between; align-items: center;padding-left: 30px; padding-right: 30px">' +
+                            '<text style="font-weight: 900;">Status</text>' +
+                            '<text style="font-weight: 900">Progress</text>' +
+                            '<text style="font-weight: 900">Duration</text>' +
+                        '</div>' +
+                        '<div style="height: 35px; width: 440px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 30px; padding-right: 30px">' +
+                            '<text style="font-weight: 900;">Created</text>' +
+                            '<div style="height: 25px; width: 250px; border-style: solid; background-color: #d6d6d6">' +
+                                '<div style="height: 25px; width: 200px; background-color: #80d2ff">' +
+                                '</div>' +
+                            '</div>' +
+                            '<text style="font-weight: 900;">6000 ms</text>' +
+                        '</div>' +
+                        '<div style="height: 5px; width: 500px; margin-top: 10px; background-color: #d6d6d6">' +
+                        '</div>' +
+                        '<div style="height: 35px; width: 440px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 30px; padding-right: 30px">' +
+                            '<text style="font-weight: 900;">Finished</text>' +
+                            '<div style="height: 25px; width: 250px; border-style: solid; background-color: #d6d6d6">' +
+                                '<div style="height: 25px; width: 100px; background-color: #5bfc60">' +
+                                '</div>' +
+                            '</div>' +
+                            '<text style="font-weight: 900;">2000 ms</text>	' +
+                        '</div>' +
+                    '</div>' +
+                '</div>'
+                
+            cell.parentNode.insertBefore(this.monitorHTLM, cell.nextElementSibling);
+        }
+    }
+
 	setInfo(newInfo: string): void {
 		this.info = newInfo;
 		if(this.dialogOpened) {
 			document.getElementById('dialog-info').innerHTML = newInfo;
+            
 		}
 	}
 
