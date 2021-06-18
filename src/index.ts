@@ -155,6 +155,8 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
                         '<div style="height: 35px; width: 440px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 30px; padding-right: 30px">' +
                             '<text style="font-weight: 900;">Created</text>' +
                             '<div style="height: 25px; width: 250px; border-style: solid; background-color: #d6d6d6">' +
+								'<div id="created-number" style="z-index: 1; position: absolute; height: 25px; width: 250px; text-align: center; line-height: 25px; font-weight: bold">' +
+								'</div>' +
                                 '<div id="created-bar" style="height: 25px; width: 0px; background-color: #80d2ff">' +
                                 '</div>' +
                             '</div>' +
@@ -165,6 +167,8 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
                         '<div style="height: 35px; width: 440px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 30px; padding-right: 30px">' +
                             '<text style="font-weight: 900;">Finished</text>' +
                             '<div style="height: 25px; width: 250px; border-style: solid; background-color: #d6d6d6">' +
+								'<div id="finished-number" style="z-index: 1; position: absolute; height: 25px; width: 250px; text-align: center; line-height: 25px; font-weight: bold">' +
+								'</div>' +
                                 '<div id="finished-bar" style="height: 25px; width: 0px; background-color: #5bfc60">' +
                                 '</div>' +
                             '</div>' +
@@ -247,15 +251,15 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 				console.log(this.lastOutput);
 				var currentOutput = output.replace(this.lastOutput, '');
 				console.log(currentOutput);
-				if(currentOutput.includes("INFO:root:Before lambdas invoke. Number of lambdas: \d")) {
+				if(currentOutput.includes("INFO:root:Before lambdas invoke. Number of lambdas:")) {
 					var words = currentOutput.split(" ");
     				this.setPartitions(Number.parseInt(words[words.length - 1]));
 				} 
-				else if(currentOutput.includes("INFO:root:New lambda - \d")) {
+				else if(currentOutput.includes("INFO:root:New lambda -")) {
 					var words = currentOutput.split(" ");
     				this.setCreated(Number.parseInt(words[words.length - 1]));
 				}
-				else if(currentOutput.includes("INFO:root:Lambdas finished: \d")) {
+				else if(currentOutput.includes("INFO:root:Lambdas finished:")) {
 					var words = currentOutput.split(" ");
     				this.setFinished(Number.parseInt(words[words.length - 1]));
 				}
@@ -271,13 +275,15 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 	}
 
 	setCreated(created: number): void {
-		this.created = created;
+		this.created = created + 1;
 		document.getElementById('created-bar').style.width = (250*(this.created)/(this.partitions)).toString() + "px";
+		document.getElementById('created-number').textContent = this.created + "/" + this.partitions;
 	}
 
 	setFinished(finished: number): void {
 		this.finished = finished;
 		document.getElementById('finished-bar').style.width = (250*(this.finished)/(this.partitions)).toString() + "px";
+		document.getElementById('finished-number').textContent = this.finished + "/" + this.partitions;
 	}
 
 	allCellsSlot(list: IObservableUndoableList<ICellModel>, args: IObservableList.IChangedArgs<ICellModel>) {
