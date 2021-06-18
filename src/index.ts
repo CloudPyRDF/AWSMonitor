@@ -35,6 +35,12 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 
     monitorHTLM: HTMLDivElement;
 
+	partitions: number;
+
+	created: number;
+
+	finished: number;
+
 	createNew(panel: NotebookPanel, context: DocumentRegistry.IContext<INotebookModel>): IDisposable {
 		// Create the toolbar button
 		let monitorButton = new ToolbarButton({
@@ -44,6 +50,9 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 
 		this.info = "Searching for a cell with PyRDF call...";
 		this.dialogOpened = false;
+		this.partitions = 0;
+		this.created = 0;
+		this.finished = 0;
         
 
 		// Add the toolbar button to the notebook toolbar
@@ -136,7 +145,7 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
                     '<div style="height: 200px; width: 500px;">' +
                         '<div style="height: 35px; width: 495px; background-color: #ffb029; display: flex; flex-direction: row; justify-content: left; align-items: center; padding-left: 5px">' +
                             '<text style="font-weight: 900; margin-right: 30px">AWSMonitor</text>' +
-                            '<text style="font-weight: 900">Partitions: 64</text>' +
+                            '<text id="partitions-text" style="font-weight: 900"></text>' +
                         '</div>' +
                         '<div style="height: 35px; width: 440px; background-color: #d6d6d6; display: flex; flex-direction: row; justify-content: space-between; align-items: center;padding-left: 30px; padding-right: 30px">' +
                             '<text style="font-weight: 900;">Status</text>' +
@@ -146,7 +155,7 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
                         '<div style="height: 35px; width: 440px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 30px; padding-right: 30px">' +
                             '<text style="font-weight: 900;">Created</text>' +
                             '<div style="height: 25px; width: 250px; border-style: solid; background-color: #d6d6d6">' +
-                                '<div style="height: 25px; width: 200px; background-color: #80d2ff">' +
+                                '<div id="created-bar" style="height: 25px; width: 0px; background-color: #80d2ff">' +
                                 '</div>' +
                             '</div>' +
                             '<text style="font-weight: 900;">6000 ms</text>' +
@@ -156,7 +165,7 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
                         '<div style="height: 35px; width: 440px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 30px; padding-right: 30px">' +
                             '<text style="font-weight: 900;">Finished</text>' +
                             '<div style="height: 25px; width: 250px; border-style: solid; background-color: #d6d6d6">' +
-                                '<div style="height: 25px; width: 100px; background-color: #5bfc60">' +
+                                '<div id="finished-bar" style="height: 25px; width: 0px; background-color: #5bfc60">' +
                                 '</div>' +
                             '</div>' +
                             '<text style="font-weight: 900;">2000 ms</text>	' +
@@ -238,10 +247,37 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 				console.log(this.lastOutput);
 				var currentOutput = output.replace(this.lastOutput, '');
 				console.log(currentOutput);
+				if(currentOutput.includes("INFO:root:Before lambdas invoke. Number of lambdas: \d")) {
+					var words = currentOutput.split(" ");
+    				this.setPartitions(Number.parseInt(words[words.length - 1]));
+				} 
+				else if(currentOutput.includes("INFO:root:New lambda - \d")) {
+					var words = currentOutput.split(" ");
+    				this.setCreated(Number.parseInt(words[words.length - 1]));
+				}
+				else if(currentOutput.includes("INFO:root:Lambdas finished: \d")) {
+					var words = currentOutput.split(" ");
+    				this.setFinished(Number.parseInt(words[words.length - 1]));
+				}
 
 				this.lastOutput = output;
 				break;
 		}
+	}
+
+	setPartitions(partitions: number): void {
+		this.partitions = partitions;
+		document.getElementById('partitions-text').textContent = "Number of partitions: " + this.partitions;
+	}
+
+	setCreated(created: number): void {
+		this.created = created;
+		document.getElementById('created-bar').style.width = (250*(this.created)/(this.partitions)).toString() + "px";
+	}
+
+	setFinished(finished: number): void {
+		this.finished = finished;
+		document.getElementById('finished-bar').style.width = (250*(this.finished)/(this.partitions)).toString() + "px";
 	}
 
 	allCellsSlot(list: IObservableUndoableList<ICellModel>, args: IObservableList.IChangedArgs<ICellModel>) {
