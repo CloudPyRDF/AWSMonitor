@@ -99,24 +99,26 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 	}
 
 	searchForCellWithAnnotation(panel: NotebookPanel): void {
-		const notebook = panel.content;
-		var cells = notebook.model.cells;
-		for (let i = 0; i < cells.length; i++) {
-			const cell = cells.get(i);
-			if(cell.value.text.includes("#@monitor")) {
-				if (!isCodeCellModel(cell)) {
-					throw new Error("cell is not a code cell.");
-				}
-				this.selectedCell = cell;
-				this.addListener();
-				this.setInfo("Cell found");
-                this.insertAWSMonitor();
-				break;
-			}
-		}
-		if(!this.selectedCell) {
-			this.setInfo("No cell with annotation found");
-		}
+        if(this.monitorHTLM != null) {
+            const notebook = panel.content;
+            var cells = notebook.model.cells;
+            for (let i = 0; i < cells.length; i++) {
+                const cell = cells.get(i);
+                if(cell.value.text.includes("#@monitor")) {
+                    if (!isCodeCellModel(cell)) {
+                        throw new Error("cell is not a code cell.");
+                    }
+                    this.selectedCell = cell;
+                    this.addListener();
+                    this.setInfo("Cell found");
+                    this.insertAWSMonitor();
+                    break;
+                }
+            }
+            if(!this.selectedCell) {
+                this.setInfo("No cell with annotation found");
+            }
+        }
 	}
 
     insertAWSMonitor(): void {
