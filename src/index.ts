@@ -125,48 +125,51 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 
     insertAWSMonitor(): void {
 
-        if(this.monitorHTLM == null) {
-            this.monitorHTLM = document.createElement('div');
-            this.monitorHTLM.id = 'monitor';
-            this.monitorHTLM.innerHTML = 
-                '<div style="display: flex; justify-content: center; align-items: center">' +
-                    '<div style="height: 200px; width: 500px;">' +
-                        '<div style="height: 35px; width: 495px; background-color: #ffb029; display: flex; flex-direction: row; justify-content: left; align-items: center; padding-left: 5px">' +
-                            '<text style="font-weight: 900; margin-right: 30px">AWSMonitor</text>' +
-                            '<text id="partitions-text" style="font-weight: 900"></text>' +
-                        '</div>' +
-                        '<div style="height: 35px; width: 440px; background-color: #d6d6d6; display: flex; flex-direction: row; justify-content: space-between; align-items: center;padding-left: 30px; padding-right: 30px">' +
-                            '<text style="font-weight: 900;">Status</text>' +
-                            '<text style="font-weight: 900">Progress</text>' +
-                            '<text style="font-weight: 900">Duration</text>' +
-                        '</div>' +
-                        '<div style="height: 35px; width: 440px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 30px; padding-right: 30px">' +
-                            '<text style="font-weight: 900;">Created</text>' +
-                            '<div style="height: 25px; width: 250px; border-style: solid; background-color: #d6d6d6">' +
-								'<div id="created-number" style="z-index: 1; position: absolute; height: 25px; width: 250px; text-align: center; line-height: 25px; font-weight: bold">' +
-								'</div>' +
-                                '<div id="created-bar" style="height: 25px; width: 0px; background-color: #80d2ff">' +
-                                '</div>' +
-                            '</div>' +
-                            '<text id="created-time" style="font-weight: 900;"></text>' +
-                        '</div>' +
-                        '<div style="height: 5px; width: 500px; margin-top: 10px; background-color: #d6d6d6">' +
-                        '</div>' +
-                        '<div style="height: 35px; width: 440px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 30px; padding-right: 30px">' +
-                            '<text style="font-weight: 900;">Finished</text>' +
-                            '<div style="height: 25px; width: 250px; border-style: solid; background-color: #d6d6d6">' +
-								'<div id="finished-number" style="z-index: 1; position: absolute; height: 25px; width: 250px; text-align: center; line-height: 25px; font-weight: bold">' +
-								'</div>' +
-                                '<div id="finished-bar" style="height: 25px; width: 0px; background-color: #5bfc60">' +
-                                '</div>' +
-                            '</div>' +
-                            '<text id="finished-time" style="font-weight: 900;"></text>	' +
-                        '</div>' +
-                    '</div>' +
-                '</div>'
-                
-            this.selectedCellHTML.parentNode.insertBefore(this.monitorHTLM, this.selectedCellHTML.nextElementSibling);
-        }
+		if(this.monitorHTLM) {
+			let element = document.getElementById('monitor');
+			element.parentNode.removeChild(element);
+		}
+        
+		this.monitorHTLM = document.createElement('div');
+		this.monitorHTLM.id = 'monitor';
+		this.monitorHTLM.innerHTML = 
+			'<div style="display: flex; justify-content: center; align-items: center">' +
+				'<div style="height: 200px; width: 500px;">' +
+					'<div style="height: 35px; width: 495px; background-color: #ffb029; display: flex; flex-direction: row; justify-content: left; align-items: center; padding-left: 5px">' +
+						'<text style="font-weight: 900; margin-right: 30px">AWSMonitor</text>' +
+						'<text id="partitions-text" style="font-weight: 900"></text>' +
+					'</div>' +
+					'<div style="height: 35px; width: 440px; background-color: #d6d6d6; display: flex; flex-direction: row; justify-content: space-between; align-items: center;padding-left: 30px; padding-right: 30px">' +
+						'<text style="font-weight: 900;">Status</text>' +
+						'<text style="font-weight: 900">Progress</text>' +
+						'<text style="font-weight: 900">Duration</text>' +
+					'</div>' +
+					'<div style="height: 35px; width: 440px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 30px; padding-right: 30px">' +
+						'<text style="font-weight: 900;">Created</text>' +
+						'<div style="position:absolute; margin-left: 85px; height: 25px; width: 250px; border-style: solid; background-color: #d6d6d6">' +
+							'<div id="created-number" style="position: absolute; height: 25px; width: 250px; text-align: center; line-height: 25px; font-weight: bold">' +
+							'</div>' +
+							'<div id="created-bar" style="height: 25px; width: 0px; background-color: #80d2ff">' +
+							'</div>' +
+						'</div>' +
+						'<text id="created-time" style="font-weight: 900;"></text>' +
+					'</div>' +
+					'<div style="height: 5px; width: 500px; margin-top: 10px; background-color: #d6d6d6">' +
+					'</div>' +
+					'<div style="height: 35px; width: 440px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px; padding-left: 30px; padding-right: 30px">' +
+						'<text style="font-weight: 900;">Finished</text>' +
+						'<div style="position:absolute; margin-left: 85px; height: 25px; width: 250px; border-style: solid; background-color: #d6d6d6">' +
+							'<div id="finished-number" style="position: absolute; height: 25px; width: 250px; text-align: center; line-height: 25px; font-weight: bold">' +
+							'</div>' +
+							'<div id="finished-bar" style="height: 25px; width: 0px; background-color: #5bfc60">' +
+							'</div>' +
+						'</div>' +
+						'<text id="finished-time" style="font-weight: 900;"></text>	' +
+					'</div>' +
+				'</div>' +
+			'</div>'
+			
+		this.selectedCellHTML.parentNode.insertBefore(this.monitorHTLM, this.selectedCellHTML.nextElementSibling);
     }
 
 	setInfo(newInfo: string): void {
@@ -191,7 +194,7 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 			case "add":
 			case "set":
 				console.log(args);
-				var output = <string>args.newValues[0].data['application/vnd.jupyter.stdout'];
+				var output = <string>args.newValues[0].data['application/vnd.jupyter.stderr'];
 
 				console.log(this.lastOutput);
 				var currentOutput = output.replace(this.lastOutput, '');
@@ -239,7 +242,7 @@ export class ButtonExtension implements DocumentRegistry.IWidgetExtension<Notebo
 	}
 
 	setTimeText(time: number, id: string) {
-		document.getElementById(id).textContent = (time - this.startTime) + " ms";
+		document.getElementById(id).textContent = ((time - this.startTime)/1000) + " s";
 	}
 
 }
