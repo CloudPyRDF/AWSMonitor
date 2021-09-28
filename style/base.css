@@ -1,0 +1,9 @@
+#dialog-info {
+    font-family: Arial, serif
+}
+
+#close-button {
+    position: absolute;
+    right: 0;
+    top: 0;
+}
