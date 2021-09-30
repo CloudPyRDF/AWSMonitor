@@ -1,9 +1,105 @@
 #dialog-info {
-    font-family: Arial, serif
+    font-family: Arial, serif;
 }
 
 #close-button {
     position: absolute;
     right: 0;
     top: 0;
+}
+
+#monitor-outer-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#monitor-wrapper {
+    height: 200px;
+    width: 500px;
+}
+
+#monitor-header {
+    height: 35px;
+    width: 495px;
+    background-color: #ffb029;
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-items: center;
+    padding-left: 5px;
+}
+
+#monitor-title-text {
+    font-weight: 900;
+    margin-right: 30px;
+}
+
+#partitions-text {
+    font-weight: 900;
+}
+
+.monitor-title {
+    font-weight: 900;
+}
+
+#monitor-column-titles-wrapper {
+    height: 35px;
+    width: 440px;
+    background-color: #d6d6d6;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-left: 30px;
+    padding-right: 30px;
+}
+
+.monitor-info-row-wrapper {
+    height: 35px;
+    width: 440px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-left: 30px;
+    padding-right: 30px;
+}
+
+.monitor-info-row {
+    position:absolute;
+    margin-left: 85px;
+    height: 25px;
+    width: 250px;
+    border-style: solid;
+    background-color: #d6d6d6;
+}
+
+.monitor-progress-text {
+    position: absolute;
+    height: 25px;
+    width: 250px;
+    text-align: center;
+    line-height: 25px;
+    font-weight: bold;
+}
+
+#created-bar {
+    height: 25px;
+    width: 0;
+    background-color: #80d2ff;
+}
+
+#finished-bar {
+    height: 25px;
+    width: 0;
+    background-color: #5bfc60;
+}
+
+#monitor-bars-divider {
+    height: 5px;
+    width: 500px;
+    margin-top: 10px;
+    background-color: #d6d6d6;
 }
