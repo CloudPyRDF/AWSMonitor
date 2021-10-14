@@ -138,32 +138,32 @@ export class ButtonExtension
       <div id="monitor-outer-wrapper">
         <div id="monitor-wrapper">
           <div id="monitor-header">
-            <text id="monitor-title-text">AWSMonitor</text>
-            <text id="partitions-text"></text>
+            <text id="monitor-title-text" class="monitor-title">AWSMonitor</text>
+            <text id="partitions-text" class="monitor-title"></text>
           </div>
-          <div id="monitor-column-titles-wrapper">
+          <div id="monitor-column-titles-wrapper" class="monitor-content-wrapper">
             <text class="monitor-title">Status</text>
             <text class="monitor-title">Progress</text>
             <text class="monitor-title">Duration</text>
           </div>
-          <div class="monitor-info-row-wrapper">
+          <div class="monitor-info-row-wrapper monitor-content-wrapper">
             <text class="monitor-title">Created</text>
             <div class="monitor-info-row">
               <div id="created-number" class="monitor-progress-text">
               </div>
-              <div id="created-bar">
+              <div id="created-bar" class="progress-bar">
               </div>
             </div>
             <text id="created-time" class="monitor-title"></text>
           </div>
           <div id="monitor-bars-divider">
           </div>
-          <div class="monitor-info-row-wrapper">
+          <div class="monitor-info-row-wrapper monitor-content-wrapper">
             <text class="monitor-title">Finished</text>
             <div class="monitor-info-row">
               <div id="finished-number" class="monitor-progress-text">
               </div>
-              <div id="finished-bar">
+              <div id="finished-bar" class="progress-bar">
               </div>
             </div>
             <text id="finished-time" class="monitor-title"></text>	
