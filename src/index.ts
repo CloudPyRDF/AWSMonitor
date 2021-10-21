@@ -17,7 +17,7 @@ import { IDisposable } from '@lumino/disposable';
 
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
-export class ButtonExtension
+export class AWSMonitorExtension
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel>
 {
   dialog: HTMLDialogElement;
@@ -42,27 +42,68 @@ export class ButtonExtension
 
   startTime: number;
 
+  dialogInnerHTML = `
+    <h1 id="dialog-info">
+      ${this.info}
+    </h1>
+    <button type="button" id="close-button">X</button>
+  `;
+
+  monitorInnerHTML = `
+  <div id="monitor-outer-wrapper">
+    <div id="monitor-wrapper">
+      <div id="monitor-header">
+        <text id="monitor-title-text" class="monitor-title">AWSMonitor</text>
+        <text id="partitions-text" class="monitor-title"></text>
+      </div>
+      <div id="monitor-column-titles-wrapper" class="monitor-content-wrapper">
+        <text class="monitor-title">Status</text>
+        <text class="monitor-title">Progress</text>
+        <text class="monitor-title">Duration</text>
+      </div>
+      <div class="monitor-info-row-wrapper monitor-content-wrapper">
+        <text class="monitor-title">Created</text>
+        <div class="monitor-info-row">
+          <div id="created-number" class="monitor-progress-text">
+          </div>
+          <div id="created-bar" class="progress-bar">
+          </div>
+        </div>
+        <text id="created-time" class="monitor-title"></text>
+      </div>
+      <div id="monitor-bars-divider">
+      </div>
+      <div class="monitor-info-row-wrapper monitor-content-wrapper">
+        <text class="monitor-title">Finished</text>
+        <div class="monitor-info-row">
+          <div id="finished-number" class="monitor-progress-text">
+          </div>
+          <div id="finished-bar" class="progress-bar">
+          </div>
+        </div>
+        <text id="finished-time" class="monitor-title"></text>	
+      </div>
+    </div>
+  </div>
+  `;
+
   createNew(
     panel: NotebookPanel,
     context: DocumentRegistry.IContext<INotebookModel>
   ): IDisposable {
-    // Create the toolbar button
-    const monitorButton = new ToolbarButton({
-      label: 'Monitor',
-      onClick: () => this.openDialog(panel)
-    });
-
     this.info = 'Searching for a cell with PyRDF call...';
     this.dialogOpened = false;
     this.partitions = 0;
     this.created = 0;
     this.finished = 0;
+    
+    const monitorButton = new ToolbarButton({
+      label: 'AWS Monitor',
+      onClick: () => this.openDialog(panel)
+    });
 
-    // Add the toolbar button to the notebook toolbar
-    panel.toolbar.addItem('Monitor', monitorButton);
+    panel.toolbar.addItem('monitorButton', monitorButton);
 
-    // The ToolbarButton class implements `IDisposable`, so the
-    // button *is* the extension for the purposes of this method.
     return monitorButton;
   }
 
@@ -73,12 +114,7 @@ export class ButtonExtension
       console.log('Opening...');
       this.dialog = document.createElement('dialog');
       this.dialog.id = 'dialog';
-      this.dialog.innerHTML = `
-        <h1 id="dialog-info">
-			    ${this.info}
-        </h1>
-        <button type="button" id="close-button">X</button>
-      `;
+      this.dialog.innerHTML = this.dialogInnerHTML;
 
       document.body.appendChild(this.dialog);
 
@@ -103,10 +139,8 @@ export class ButtonExtension
 
   searchForCellWithAnnotation(panel: NotebookPanel): void {
     const cellsFromDomModel = document.getElementsByClassName(
-      'lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper'
-    );
-    const notebook = panel.content;
-    const cells = notebook.model.cells;
+      'lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper');
+    const cells = panel.content.model.cells;
     for (let i = 0; i < cells.length; i++) {
       const cell = cells.get(i);
       if (cell.value.text.includes('#@monitor')) {
@@ -134,43 +168,7 @@ export class ButtonExtension
 
     this.monitorHTLM = document.createElement('div');
     this.monitorHTLM.id = 'monitor';
-    this.monitorHTLM.innerHTML = `
-      <div id="monitor-outer-wrapper">
-        <div id="monitor-wrapper">
-          <div id="monitor-header">
-            <text id="monitor-title-text" class="monitor-title">AWSMonitor</text>
-            <text id="partitions-text" class="monitor-title"></text>
-          </div>
-          <div id="monitor-column-titles-wrapper" class="monitor-content-wrapper">
-            <text class="monitor-title">Status</text>
-            <text class="monitor-title">Progress</text>
-            <text class="monitor-title">Duration</text>
-          </div>
-          <div class="monitor-info-row-wrapper monitor-content-wrapper">
-            <text class="monitor-title">Created</text>
-            <div class="monitor-info-row">
-              <div id="created-number" class="monitor-progress-text">
-              </div>
-              <div id="created-bar" class="progress-bar">
-              </div>
-            </div>
-            <text id="created-time" class="monitor-title"></text>
-          </div>
-          <div id="monitor-bars-divider">
-          </div>
-          <div class="monitor-info-row-wrapper monitor-content-wrapper">
-            <text class="monitor-title">Finished</text>
-            <div class="monitor-info-row">
-              <div id="finished-number" class="monitor-progress-text">
-              </div>
-              <div id="finished-bar" class="progress-bar">
-              </div>
-            </div>
-            <text id="finished-time" class="monitor-title"></text>	
-          </div>
-        </div>
-      </div>
-      `;
+    this.monitorHTLM.innerHTML = this.monitorInnerHTML;
 
     this.selectedCellHTML.parentNode.insertBefore(
       this.monitorHTLM,
@@ -210,8 +208,7 @@ export class ButtonExtension
         currentOutput = output.replace(this.lastOutput, '');
         console.log(currentOutput);
         words = currentOutput.split(' ');
-        if (
-          currentOutput.includes(
+        if (currentOutput.includes(
             'INFO:root:Before lambdas invoke. Number of lambdas:'
           )
         ) {
@@ -269,24 +266,10 @@ const plugin: JupyterFrontEndPlugin<void> = {
   id: 'AWSMonitor:plugin',
   autoStart: true,
   optional: [ISettingRegistry],
-  activate: (
-    app: JupyterFrontEnd,
-    settingRegistry: ISettingRegistry | null
-  ) => {
+  activate: (app: JupyterFrontEnd) => {
     console.log('JupyterLab extension AWSMonitor is activated!');
-    const monitorButton = new ButtonExtension();
-    app.docRegistry.addWidgetExtension('Notebook', monitorButton);
-
-    if (settingRegistry) {
-      settingRegistry
-        .load(plugin.id)
-        .then(settings => {
-          console.log('AWSMonitor settings loaded:', settings.composite);
-        })
-        .catch(reason => {
-          console.error('Failed to load settings for AWSMonitor.', reason);
-        });
-    }
+    const monitorExtension = new AWSMonitorExtension();
+    app.docRegistry.addWidgetExtension('Notebook', monitorExtension);
   }
 };
 
