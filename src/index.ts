@@ -24,7 +24,7 @@ export class AWSMonitorExtension
 
   dialogOpened: boolean;
 
-  info: string;
+  info: string = "";
 
   selectedCell: ICodeCellModel;
 
