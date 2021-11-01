@@ -23,7 +23,6 @@
   ],
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "style": "style/index.css",
   "repository": {
     "type": "git",
     "url": "https://github.com/Dawid126/AWSMonitor.git"
@@ -67,10 +66,8 @@
     "style/*.css",
     "style/index.js"
   ],
-  "styleModule": "style/index.js",
   "jupyterlab": {
     "extension": true,
-    "outputDir": "AWSMonitor/labextension",
     "schemaDir": "schema"
   }
 }
