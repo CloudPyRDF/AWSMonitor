@@ -1,17 +1,31 @@
 
-import json
-from pathlib import Path
 
-from ._version import __version__
+from IPython import get_ipython
+from ipykernel.comm import Comm
 
-HERE = Path(__file__).parent.resolve()
+#from .aws_monitor import MonitorHandler
+from aws_monitor import load_ipython_extension
 
-with (HERE / "labextension" / "package.json").open() as fid:
-    data = json.load(fid)
 
-def _jupyter_labextension_paths():
+def _jupyter_server_extension_points():
+    comm = Comm(target_name='test')
+    comm.send({"msg": "c4"})
+    f = open("$HOME/xssssssss.txt", "w")
+    f.write("elo")
+    f.close()
+
     return [{
-        "src": "labextension",
-        "dest": data["name"]
+        "module": "AWSMonitor"
     }]
+
+def _load_jupyter_server_extension(server_app):
+    #handlers = [("/AWSMonitor", MonitorHandler)]
+    #server_app.web_app.add_handlers(".*$", handlers)
+    comm = Comm(target_name='test')
+    comm.send({"msg": "c5"})
+    f = open("$HOME/xdd.txt", "w")
+
+    f.write("elo")
+    f.close()
+    load_ipython_extension(get_ipython())
 

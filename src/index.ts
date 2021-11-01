@@ -11,7 +11,12 @@ import { isCodeCellModel, ICodeCellModel } from '@jupyterlab/cells';
 
 import { IOutputAreaModel } from '@jupyterlab/outputarea';
 
-import { NotebookPanel, INotebookModel } from '@jupyterlab/notebook';
+import { ICommMsgMsg } from '@jupyterlab/services/lib/kernel/messages';
+import {
+  NotebookPanel,
+  INotebookModel,
+  INotebookTracker
+} from '@jupyterlab/notebook';
 
 import { IDisposable } from '@lumino/disposable';
 
@@ -24,7 +29,7 @@ export class AWSMonitorExtension
 
   dialogOpened: boolean;
 
-  info: string = "";
+  info = '';
 
   selectedCell: ICodeCellModel;
 
@@ -41,6 +46,8 @@ export class AWSMonitorExtension
   finished: number;
 
   startTime: number;
+
+  commCreated = false;
 
   dialogInnerHTML = `
     <h1 id="dialog-info">
@@ -103,12 +110,36 @@ export class AWSMonitorExtension
     });
 
     panel.toolbar.addItem('monitorButton', monitorButton);
-
+    
     return monitorButton;
   }
 
+  handle(msg: ICommMsgMsg): void {
+    console.log(msg);
+  }
+
   openDialog(panel: NotebookPanel): void {
+    if (!this.commCreated) {
+      panel.sessionContext.session.kernel.handleComms = true;
+      panel.sessionContext.session.kernel.registerCommTarget(
+        'test',
+        (comm, msg) => {
+          // comm is the frontend comm instance
+          // msg is the comm_open message, which can carry data
+          console.log('in register comm');
+          // Register handlers for later messages:
+          comm.onMsg = this.handle;
+          comm.send({ foo: 4 });
+        }
+      );
+      this.commCreated = true;
+    }
     console.log('Opening dialog');
+    const comm = panel.sessionContext.session.kernel.createComm('test');
+    comm.open();
+
+    comm.send({ foo: 7 });
+    console.log(panel.sessionContext.session.kernel.handleComms);
 
     if (!this.dialogOpened) {
       console.log('Opening...');
@@ -266,10 +297,13 @@ const plugin: JupyterFrontEndPlugin<void> = {
   id: 'AWSMonitor:plugin',
   autoStart: true,
   optional: [ISettingRegistry],
-  activate: (app: JupyterFrontEnd) => {
+  activate: (app: JupyterFrontEnd, notebooks: INotebookTracker) => {
     console.log('JupyterLab extension AWSMonitor is activated!');
     const monitorExtension = new AWSMonitorExtension();
     app.docRegistry.addWidgetExtension('Notebook', monitorExtension);
+
+    
+
   }
 };
 
