@@ -1,24 +1,58 @@
-import logging
 from ipykernel.comm import Comm
+from jupyter_server.base.handlers import JupyterHandler
+import json
+import tornado
+import os
+import pathlib
 
-logger = logging.getLogger("AWSMonitor")
-comm = Comm(target_name='test')
+home = os.getenv('HOME')
 
-def load_ipython_extension(ipython):
-    comm.send({"msg": "2"})
-    ipython.kernel.comm_manager.register_target(
-        "info", target_func)
-
-
-def target_func(comm, msg):
-    """Callback function to be called when a frontend comm is opened"""
-
-    @comm.on_msg
-    def _recv(msg):
-        handle_comm_message(msg)
+invoked = 0
+finished = 0
+nparts = 0
 
 
-def handle_comm_message(msg):
-    comm.send({"msg": "c"})
-    print("lel")
-    logger.warning("warning")
+class MonitorHandler(JupyterHandler):
+    @tornado.web.authenticated
+    def put(self):
+        global nparts
+        global invoked
+        global finished
+        body = self.get_json_body()
+        msg = body['msg']
+        if msg == 'START':
+            nparts = body['npart']
+        if msg == 'INV':
+            invoked = invoked + 1
+        if msg == 'FIN':
+            finished = finished + 1
+
+        print(finished, invoked, nparts)
+        self.write(json.dumps({'status': 'OK'}))
+
+
+    @tornado.web.authenticated
+    def get(self):
+        self.write(json.dumps({
+            'npart': self.nparts,
+            'FIN': self.finished,
+            'INV': self.invoked
+        }))
+
+
+    @tornado.web.authenticated
+    def post(self):
+        stream = os.popen('jupyter server list')
+        output = stream.read()
+        print(output)
+        if 'token' not in output:
+            self.write(json.dumps({'status': 'Failed'}))
+            return
+        try:
+            #pathlib.Path(home + '/.notebook_metadata').mkdir(exist_ok=True)
+            with open('/tmp/token_9238572973', 'w') as f:
+                f.write(output.split("=")[1].split(":")[0][:-1])
+        except FileNotFoundError as e:
+            pass
+        self.write(json.dumps({'status': 'OK'}))
+

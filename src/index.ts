@@ -12,6 +12,13 @@ import { isCodeCellModel, ICodeCellModel } from '@jupyterlab/cells';
 import { IOutputAreaModel } from '@jupyterlab/outputarea';
 
 import { ICommMsgMsg } from '@jupyterlab/services/lib/kernel/messages';
+
+import { IKernelConnection } from '@jupyterlab/services/lib/kernel/kernel';
+
+import { ServerConnection } from '@jupyterlab/services';
+
+import { URLExt } from '@jupyterlab/coreutils';
+
 import {
   NotebookPanel,
   INotebookModel,
@@ -48,6 +55,8 @@ export class AWSMonitorExtension
   startTime: number;
 
   commCreated = false;
+
+  kernel: IKernelConnection;
 
   dialogInnerHTML = `
     <h1 id="dialog-info">
@@ -102,15 +111,14 @@ export class AWSMonitorExtension
     this.dialogOpened = false;
     this.partitions = 0;
     this.created = 0;
-    this.finished = 0;
-    
+    this.finished = 0; 
     const monitorButton = new ToolbarButton({
       label: 'AWS Monitor',
       onClick: () => this.openDialog(panel)
     });
-
+    // this.registerComm(panel);
+    this.sendPostRequestToSaveToken();
     panel.toolbar.addItem('monitorButton', monitorButton);
-    
     return monitorButton;
   }
 
@@ -118,29 +126,46 @@ export class AWSMonitorExtension
     console.log(msg);
   }
 
+  async sendGetRequest(): Promise<void> {
+    const settings = ServerConnection.makeSettings({});
+    const serverResponse = await ServerConnection.makeRequest(
+      URLExt.join(settings.baseUrl, '/AWSMonitor'),
+      { method: 'GET' },
+      settings
+    );
+    const response = await serverResponse.json();
+    console.log(response);
+  }
+
+  async sendPostRequestToSaveToken(): Promise<void> {
+    const settings = ServerConnection.makeSettings({});
+    ServerConnection.makeRequest(
+      URLExt.join(settings.baseUrl, '/AWSMonitor'),
+      { method: 'POST'},
+      settings
+    );
+  }
+  // registerComm(panel: NotebookPanel): void {
+  //   (async () => {
+  //     console.log('waiting for session');
+  //     while ( panel.sessionContext.session === null ) {
+  //       console.log(panel.sessionContext.session);
+  //       await new Promise(resolve => setTimeout(resolve, 1000));
+  //     }
+  //     this.kernel = panel.sessionContext.session.kernel;
+  //     console.log('creating comm');
+  //     panel.sessionContext.session.kernel.handleComms = true;
+  //     panel.sessionContext.session.kernel.registerCommTarget(
+  //       'monitor_front',
+  //       (comm, msg) => {
+  //         console.log('in register comm');
+  //         comm.onMsg = this.handle;
+  //       }
+  //     );
+  //   })();
+  // }
+
   openDialog(panel: NotebookPanel): void {
-    if (!this.commCreated) {
-      panel.sessionContext.session.kernel.handleComms = true;
-      panel.sessionContext.session.kernel.registerCommTarget(
-        'test',
-        (comm, msg) => {
-          // comm is the frontend comm instance
-          // msg is the comm_open message, which can carry data
-          console.log('in register comm');
-          // Register handlers for later messages:
-          comm.onMsg = this.handle;
-          comm.send({ foo: 4 });
-        }
-      );
-      this.commCreated = true;
-    }
-    console.log('Opening dialog');
-    const comm = panel.sessionContext.session.kernel.createComm('test');
-    comm.open();
-
-    comm.send({ foo: 7 });
-    console.log(panel.sessionContext.session.kernel.handleComms);
-
     if (!this.dialogOpened) {
       console.log('Opening...');
       this.dialog = document.createElement('dialog');
@@ -170,7 +195,8 @@ export class AWSMonitorExtension
 
   searchForCellWithAnnotation(panel: NotebookPanel): void {
     const cellsFromDomModel = document.getElementsByClassName(
-      'lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper');
+      'lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper'
+    );
     const cells = panel.content.model.cells;
     for (let i = 0; i < cells.length; i++) {
       const cell = cells.get(i);
@@ -301,9 +327,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
     console.log('JupyterLab extension AWSMonitor is activated!');
     const monitorExtension = new AWSMonitorExtension();
     app.docRegistry.addWidgetExtension('Notebook', monitorExtension);
-
-    
-
   }
 };
 
