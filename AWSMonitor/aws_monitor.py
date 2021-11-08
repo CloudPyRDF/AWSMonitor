@@ -27,16 +27,20 @@ class MonitorHandler(JupyterHandler):
         if msg == 'FIN':
             finished = finished + 1
 
-        print(finished, invoked, nparts)
+        print(finished, invoked)
+
         self.write(json.dumps({'status': 'OK'}))
 
 
     @tornado.web.authenticated
     def get(self):
+        global nparts
+        global invoked
+        global finished
         self.write(json.dumps({
-            'npart': self.nparts,
-            'FIN': self.finished,
-            'INV': self.invoked
+            'npart': nparts,
+            'FIN': finished,
+            'INV': invoked
         }))
 
 

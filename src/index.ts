@@ -9,8 +9,6 @@ import { DocumentRegistry } from '@jupyterlab/docregistry';
 
 import { isCodeCellModel, ICodeCellModel } from '@jupyterlab/cells';
 
-import { IOutputAreaModel } from '@jupyterlab/outputarea';
-
 import { ICommMsgMsg } from '@jupyterlab/services/lib/kernel/messages';
 
 import { IKernelConnection } from '@jupyterlab/services/lib/kernel/kernel';
@@ -54,9 +52,11 @@ export class AWSMonitorExtension
 
   startTime: number;
 
-  commCreated = false;
-
   kernel: IKernelConnection;
+
+  calculationsFinished = false;
+
+  invokationFinished = false;
 
   dialogInnerHTML = `
     <h1 id="dialog-info">
@@ -80,7 +80,8 @@ export class AWSMonitorExtension
       <div class="monitor-info-row-wrapper monitor-content-wrapper">
         <text class="monitor-title">Created</text>
         <div class="monitor-info-row">
-          <div id="created-number" class="monitor-progress-text">
+          <div class="monitor-progress-text">
+            <text id="created-number"></text>
           </div>
           <div id="created-bar" class="progress-bar">
           </div>
@@ -92,7 +93,8 @@ export class AWSMonitorExtension
       <div class="monitor-info-row-wrapper monitor-content-wrapper">
         <text class="monitor-title">Finished</text>
         <div class="monitor-info-row">
-          <div id="finished-number" class="monitor-progress-text">
+          <div class="monitor-progress-text">
+            <text id="finished-number"></text>
           </div>
           <div id="finished-bar" class="progress-bar">
           </div>
@@ -116,8 +118,10 @@ export class AWSMonitorExtension
       label: 'AWS Monitor',
       onClick: () => this.openDialog(panel)
     });
-    // this.registerComm(panel);
     this.sendPostRequestToSaveToken();
+    setInterval(() => {
+      this.retriveOperationsState();
+    }, 500);
     panel.toolbar.addItem('monitorButton', monitorButton);
     return monitorButton;
   }
@@ -126,15 +130,30 @@ export class AWSMonitorExtension
     console.log(msg);
   }
 
-  async sendGetRequest(): Promise<void> {
-    const settings = ServerConnection.makeSettings({});
-    const serverResponse = await ServerConnection.makeRequest(
-      URLExt.join(settings.baseUrl, '/AWSMonitor'),
-      { method: 'GET' },
-      settings
-    );
-    const response = await serverResponse.json();
-    console.log(response);
+  async retriveOperationsState(): Promise<void> {
+    if (this.monitorHTLM && !this.calculationsFinished) {
+      const settings = ServerConnection.makeSettings({});
+      const serverResponse = await ServerConnection.makeRequest(
+        URLExt.join(settings.baseUrl, '/AWSMonitor'),
+        { method: 'GET' },
+        settings
+      );
+      const response = await serverResponse.json();
+      if (response['npart'] !== 0) {
+        this.setPartitions(response['npart']);
+        if (!this.invokationFinished) {
+          this.setCreated(response['INV']);
+          if (response['npart'] === response['INV']) {
+            this.invokationFinished = true;
+          }
+        }
+        this.setFinished(response['FIN']);
+        if (response['FIN'] === this.partitions) {
+          this.calculationsFinished = true;
+        }
+      }
+      console.log(response);
+    }
   }
 
   async sendPostRequestToSaveToken(): Promise<void> {
@@ -145,25 +164,6 @@ export class AWSMonitorExtension
       settings
     );
   }
-  // registerComm(panel: NotebookPanel): void {
-  //   (async () => {
-  //     console.log('waiting for session');
-  //     while ( panel.sessionContext.session === null ) {
-  //       console.log(panel.sessionContext.session);
-  //       await new Promise(resolve => setTimeout(resolve, 1000));
-  //     }
-  //     this.kernel = panel.sessionContext.session.kernel;
-  //     console.log('creating comm');
-  //     panel.sessionContext.session.kernel.handleComms = true;
-  //     panel.sessionContext.session.kernel.registerCommTarget(
-  //       'monitor_front',
-  //       (comm, msg) => {
-  //         console.log('in register comm');
-  //         comm.onMsg = this.handle;
-  //       }
-  //     );
-  //   })();
-  // }
 
   openDialog(panel: NotebookPanel): void {
     if (!this.dialogOpened) {
@@ -206,7 +206,6 @@ export class AWSMonitorExtension
         }
         this.selectedCell = cell;
         this.selectedCellHTML = cellsFromDomModel.item(i);
-        this.addListener();
         this.setInfo('Cell found');
         this.insertAWSMonitor();
         break;
@@ -221,6 +220,9 @@ export class AWSMonitorExtension
     if (this.monitorHTLM) {
       const element = document.getElementById('monitor');
       element.parentNode.removeChild(element);
+      this.calculationsFinished = false;
+      this.invokationFinished = false;
+      this.startTime = null;
     }
 
     this.monitorHTLM = document.createElement('div');
@@ -240,74 +242,33 @@ export class AWSMonitorExtension
     }
   }
 
-  addListener(): void {
-    this.lastOutput = '';
-    this.selectedCell.outputs.changed.connect(this.outputSlot, '');
-  }
-
-  outputSlot = async (
-    sender: IOutputAreaModel,
-    args: IOutputAreaModel.ChangedArgs
-  ): Promise<any> => {
-    let currentOutput, output: string;
-    let words: string[];
-    switch (args.type) {
-      case 'remove':
-        console.log(args);
-        break;
-      case 'add':
-      case 'set':
-        console.log(args);
-        output =
-          args.newValues[0].data['application/vnd.jupyter.stderr'].toString();
-
-        console.log(this.lastOutput);
-        currentOutput = output.replace(this.lastOutput, '');
-        console.log(currentOutput);
-        words = currentOutput.split(' ');
-        if (currentOutput.includes(
-            'INFO:root:Before lambdas invoke. Number of lambdas:'
-          )
-        ) {
-          this.setPartitions(Number.parseInt(words[words.length - 1]));
-        } else if (currentOutput.includes('INFO:root:New lambda -')) {
-          this.setCreated(Number.parseInt(words[words.length - 1]));
-        } else if (currentOutput.includes('INFO:root:Lambdas finished:')) {
-          this.setFinished(Number.parseInt(words[words.length - 1]));
-        }
-
-        this.lastOutput = output;
-        break;
-    }
-  };
-
   setPartitions(partitions: number): void {
-    this.partitions = partitions;
-    this.startTime = Date.now();
-    document.getElementById('partitions-text').textContent =
-      'Number of partitions: ' + this.partitions;
+    if (!this.partitions && partitions !== 0) {
+      this.partitions = partitions;
+      this.startTime = Date.now();
+      document.getElementById('partitions-text').textContent =
+        'Number of partitions: ' + this.partitions;
+    }
   }
 
   setCreated(created: number): void {
-    this.created = created + 1;
-    if (this.created === this.partitions) {
+    if (created === this.partitions) {
       this.setTimeText(Date.now(), 'created-time');
     }
     document.getElementById('created-bar').style.width =
-      ((250 * this.created) / this.partitions).toString() + 'px';
+      ((250 * created) / this.partitions).toString() + 'px';
     document.getElementById('created-number').textContent =
-      this.created + '/' + this.partitions;
+      created + '/' + this.partitions;
   }
 
   setFinished(finished: number): void {
-    this.finished = finished;
-    if (this.finished === this.partitions) {
+    if (finished === this.partitions) {
       this.setTimeText(Date.now(), 'finished-time');
     }
     document.getElementById('finished-bar').style.width =
-      ((250 * this.finished) / this.partitions).toString() + 'px';
+      ((250 * finished) / this.partitions).toString() + 'px';
     document.getElementById('finished-number').textContent =
-      this.finished + '/' + this.partitions;
+      finished + '/' + this.partitions;
   }
 
   setTimeText(time: number, id: string): void {
