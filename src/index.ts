@@ -58,22 +58,17 @@ export class AWSMonitorExtension
 
   invokationFinished = false;
 
-  dialogInnerHTML = `
-    <h1 id="dialog-info">
-      ${this.info}
-    </h1>
-    <button type="button" id="close-button">X</button>
-  `;
-
   monitorInnerHTML = `
   <div id="monitor-outer-wrapper">
     <div id="monitor-wrapper">
       <div id="monitor-header">
-        <text id="monitor-title-text" class="monitor-title">AWSMonitor</text>
-        <text id="partitions-text" class="monitor-title"></text>
+        <h1 id="monitor-title-text">AWSMonitor</h1>
+        <text id="partitions-text" class="monitor-title">Partitions: </text>
       </div>
       <div id="monitor-column-titles-wrapper" class="monitor-content-wrapper">
-        <text class="monitor-title">Status</text>
+		<div id="status-text">
+			<text class="monitor-title">Status</text>
+		</div>
         <text class="monitor-title">Progress</text>
         <text class="monitor-title">Duration</text>
       </div>
@@ -99,10 +94,21 @@ export class AWSMonitorExtension
           <div id="finished-bar" class="progress-bar">
           </div>
         </div>
-        <text id="finished-time" class="monitor-title"></text>	
+		<div class="finished-time-container">
+			<text id="finished-time" class="monitor-title"></text>	
+		</div>
       </div>
     </div>
   </div>
+  `;
+
+  snackbarHTML = `
+  <span class="material-icons-outlined">
+    priority_high
+  </span>
+  <p>
+    Insert "#@monitor" in the cell under which you want the monitor to be displayed
+  </p>
   `;
 
   createNew(
@@ -116,14 +122,45 @@ export class AWSMonitorExtension
     this.finished = 0; 
     const monitorButton = new ToolbarButton({
       label: 'AWS Monitor',
-      onClick: () => this.openDialog(panel)
+      onClick: () => this.searchForCellWithAnnotation(panel)
     });
+
     this.sendPostRequestToSaveToken();
+
     setInterval(() => {
       this.retriveOperationsState();
     }, 500);
+
+    this.addIconLink();
+
+    this.addSnackbar();
+
     panel.toolbar.addItem('monitorButton', monitorButton);
+
     return monitorButton;
+  }
+
+  addIconLink(): void {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href =
+      'https://fonts.googleapis.com/icon?family=Material+Icons+Outlined';
+    document.head.appendChild(link);
+  }
+
+  addSnackbar(): void {
+    const snackbar = document.createElement('div');
+    snackbar.id = 'monitor-snackbar';
+    snackbar.innerHTML = this.snackbarHTML;
+    document.body.appendChild(snackbar);
+  }
+
+  showSnackbar(): void {
+    const snackbar = document.getElementById('monitor-snackbar');
+    snackbar.className = 'show';
+    setTimeout(() => {
+      snackbar.className = snackbar.className.replace('show', '');
+    }, 3000);
   }
 
   handle(msg: ICommMsgMsg): void {
@@ -165,38 +202,15 @@ export class AWSMonitorExtension
     );
   }
 
-  openDialog(panel: NotebookPanel): void {
-    if (!this.dialogOpened) {
-      console.log('Opening...');
-      this.dialog = document.createElement('dialog');
-      this.dialog.id = 'dialog';
-      this.dialog.innerHTML = this.dialogInnerHTML;
-
-      document.body.appendChild(this.dialog);
-
-      document
-        .getElementById('close-button')
-        .addEventListener('click', () => this.closeDialog());
-
-      this.dialog.show();
-      this.dialogOpened = true;
-
-      this.searchForCellWithAnnotation(panel);
-    }
-  }
-
-  closeDialog(): void {
-    console.log('Closing...');
-    if (this.dialogOpened) {
-      document.body.removeChild(document.getElementById('dialog'));
-      this.dialogOpened = false;
-    }
+  addMonitor(panel: NotebookPanel): void {
+    this.searchForCellWithAnnotation(panel);
   }
 
   searchForCellWithAnnotation(panel: NotebookPanel): void {
     const cellsFromDomModel = document.getElementsByClassName(
       'lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper'
     );
+    this.removeMonitor();
     const cells = panel.content.model.cells;
     for (let i = 0; i < cells.length; i++) {
       const cell = cells.get(i);
@@ -206,17 +220,14 @@ export class AWSMonitorExtension
         }
         this.selectedCell = cell;
         this.selectedCellHTML = cellsFromDomModel.item(i);
-        this.setInfo('Cell found');
-        this.insertAWSMonitor();
-        break;
+        this.insertAWSMonitor(cellsFromDomModel.item(i));
+        return;
       }
     }
-    if (!this.selectedCell) {
-      this.setInfo('No cell with annotation found');
-    }
+    this.showSnackbar();
   }
 
-  insertAWSMonitor(): void {
+  removeMonitor(): void {
     if (this.monitorHTLM) {
       const element = document.getElementById('monitor');
       element.parentNode.removeChild(element);
@@ -224,22 +235,17 @@ export class AWSMonitorExtension
       this.invokationFinished = false;
       this.startTime = null;
     }
+  }
 
+  insertAWSMonitor(selectedCellHTML: Element): void {
     this.monitorHTLM = document.createElement('div');
     this.monitorHTLM.id = 'monitor';
     this.monitorHTLM.innerHTML = this.monitorInnerHTML;
 
-    this.selectedCellHTML.parentNode.insertBefore(
+    selectedCellHTML.parentNode.insertBefore(
       this.monitorHTLM,
       this.selectedCellHTML.nextElementSibling
     );
-  }
-
-  setInfo(newInfo: string): void {
-    this.info = newInfo;
-    if (this.dialogOpened) {
-      document.getElementById('dialog-info').innerHTML = newInfo;
-    }
   }
 
   setPartitions(partitions: number): void {
@@ -247,7 +253,7 @@ export class AWSMonitorExtension
       this.partitions = partitions;
       this.startTime = Date.now();
       document.getElementById('partitions-text').textContent =
-        'Number of partitions: ' + this.partitions;
+        'Partitions: ' + this.partitions;
     }
   }
 
