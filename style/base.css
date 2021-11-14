@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap');
+
 #dialog-info {
     font-family: Arial, serif;
 }
@@ -15,38 +17,52 @@
 }
 
 #monitor-wrapper {
-    height: 200px;
+    height: 141px;
     width: 500px;
+	border-style: solid;
+	border-width: 1px;
+    margin-top: 8px;
 }
 
+
+
 #monitor-header {
-    height: 35px;
-    width: 495px;
+    height: 30px;
+    width: 485px;
     background-color: #ffb029;
     display: flex;
     flex-direction: row;
     justify-content: left;
     align-items: center;
-    padding-left: 5px;
+    padding-left: 15px;
 }
 
 .monitor-title {
-    font-weight: 900;
+	font-family: Roboto, sans-serif;
+    font-weight: 400;
+	font-size: 13px;
 }
 
 #monitor-title-text {
-    margin-right: 30px;
+	font-family: Roboto, sans-serif;
+    margin-right: 15px;
+	font-size: 16px;
 }
 
+#finished-time {
+	
+}
+
+
 .monitor-content-wrapper {
-    height: 35px;
-    width: 440px;
+    height: 30px;
+    width: 426px;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding-left: 30px;
-    padding-right: 30px;
+    padding-left: 37px;
+    padding-right: 37px;
 }
 
 #monitor-column-titles-wrapper {
@@ -54,16 +70,18 @@
 }
 
 .monitor-info-row-wrapper {
-    margin-top: 10px;
+    margin-top: 3px;
 }
 
 .monitor-info-row {
     position:absolute;
-    margin-left: 85px;
+    margin-left: 83px;
     height: 25px;
     width: 250px;
     border-style: solid;
+	border-width: 1px;
     background-color: #d6d6d6;
+	border-radius: 4px;
 }
 
 .monitor-progress-text {
@@ -72,25 +90,60 @@
     width: 250px;
     text-align: center;
     line-height: 25px;
-    font-weight: bold;
+	font-family: Roboto, sans-serif;
+	font-size: 13px;
 }
 
 .progress-bar {
     height: 25px;
     width: 0;
+	border-radius: 2px;
 }
 
 #created-bar {
     background-color: #80d2ff;
 }
 
+#status-text {
+	padding-left: 5px;
+}
+
 #finished-bar {
     background-color: #5bfc60;
+}
+
+.finished-time-container {
+	display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+	width: 50px
 }
 
 #monitor-bars-divider {
     height: 5px;
     width: 500px;
-    margin-top: 10px;
+    margin-top: 5px;
     background-color: #d6d6d6;
+}
+
+#monitor-snackbar {
+    visibility: hidden;
+    min-width: 250px;
+    margin-left: -125px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 2px;
+    padding: 16px;
+    position: fixed;
+    z-index: 1;
+    left: 50%;
+    bottom: 30px;
+}
+
+#monitor-snackbar.show {
+    visibility: visible;
+    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
 }
