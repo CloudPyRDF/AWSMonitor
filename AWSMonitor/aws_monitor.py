@@ -59,4 +59,10 @@ class MonitorHandler(JupyterHandler):
         except FileNotFoundError as e:
             pass
         self.write(json.dumps({'status': 'OK'}))
+        
+    def reset_counters():
+        global nparts
+        global invoked
+        global finished
+        nparts, invoked, finished = 0
 
