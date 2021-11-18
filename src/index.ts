@@ -83,7 +83,9 @@ export class AWSMonitorExtension
           <div id="created-bar" class="progress-bar">
           </div>
         </div>
-        <text id="created-time" class="monitor-title"></text>
+        <div class="time-container">
+          <text id="created-time" class="monitor-title"></text>
+        </div>
       </div>
       <div id="monitor-bars-divider">
       </div>
@@ -96,7 +98,7 @@ export class AWSMonitorExtension
           <div id="finished-bar" class="progress-bar">
           </div>
         </div>
-		<div class="finished-time-container">
+		<div class="time-container">
 			<text id="finished-time" class="monitor-title"></text>	
 		</div>
       </div>
