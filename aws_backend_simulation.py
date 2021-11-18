@@ -13,22 +13,24 @@ with open(path, 'r') as f:
 endpoint = 'http://localhost:8888/AWSMonitor'
 
 START = lambda npart: requests.put(endpoint, params={'token': token}, data=json.dumps({'msg': 'START', 'npart': npart}))
-FINISHED = lambda: requests.put(endpoint, params={'token': token}, data=json.dumps({'msg': 'INV'}))
-INVOKED = lambda: requests.put(endpoint, params={'token': token}, data=json.dumps({'msg': 'FIN'}))
+FINISHED = lambda: requests.put(endpoint, params={'token': token}, data=json.dumps({'msg': 'FIN'}))
+INVOKED = lambda: requests.put(endpoint, params={'token': token}, data=json.dumps({'msg': 'INV'}))
 
 def lambda_sim(idx):
-    t = random.randint(1, 10)
-
-    INVOKED()
+    t = random.randint(1, 3)
+    t1 = random.randint(1, 10)
 
     time.sleep(t)
+    INVOKED()
+
+    time.sleep(t1)
 
     FINISHED()
 
     return (t, idx, True)
 
 def ProcessAndMerge(npart=32):
-    START({'npart': npart})
+    START(npart)
     print("elo")
     with concurrent.futures.ThreadPoolExecutor(max_workers=npart) as ex:
         futures = [ex.submit(lambda_sim, i) for i in range(npart)]
