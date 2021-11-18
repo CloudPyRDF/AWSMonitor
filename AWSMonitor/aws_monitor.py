@@ -21,13 +21,14 @@ class MonitorHandler(JupyterHandler):
         body = self.get_json_body()
         msg = body['msg']
         if msg == 'START':
-            nparts = body['npart']
+            self.reset_counters()
+            nparts = body['npart']    
         if msg == 'INV':
             invoked = invoked + 1
         if msg == 'FIN':
             finished = finished + 1
 
-        print(finished, invoked)
+        
 
         self.write(json.dumps({'status': 'OK'}))
 
@@ -60,9 +61,11 @@ class MonitorHandler(JupyterHandler):
             pass
         self.write(json.dumps({'status': 'OK'}))
         
-    def reset_counters():
+    def reset_counters(self):
         global nparts
         global invoked
         global finished
-        nparts, invoked, finished = 0
-
+        nparts = 0
+        invoked = 0
+        finished = 0
+        print(finished, invoked)

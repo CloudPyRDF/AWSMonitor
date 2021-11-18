@@ -7,7 +7,7 @@ import { ToolbarButton } from '@jupyterlab/apputils';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
-import { isCodeCellModel, ICodeCellModel } from '@jupyterlab/cells';
+import { ICodeCellModel } from '@jupyterlab/cells';
 
 import { ICommMsgMsg } from '@jupyterlab/services/lib/kernel/messages';
 
@@ -57,6 +57,8 @@ export class AWSMonitorExtension
   calculationsFinished = false;
 
   invokationFinished = false;
+
+  monitorButtonClicked = false;
 
   monitorInnerHTML = `
   <div id="monitor-outer-wrapper">
@@ -122,7 +124,7 @@ export class AWSMonitorExtension
     this.finished = 0; 
     const monitorButton = new ToolbarButton({
       label: 'AWS Monitor',
-      onClick: () => this.searchForCellWithAnnotationm(panel)
+      onClick: () => this.searchForCellWithAnnotation(panel)
     });
 
     this.sendPostRequestToSaveToken();
@@ -211,42 +213,19 @@ export class AWSMonitorExtension
       'lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper'
     );
     this.removeMonitor();
-    const cells = panel.content.model.cells;
-    console.log(panel.content.activeCellIndex);
-    console.log(panel.content.activeCell);
-    for (let i = 0; i < cells.length; i++) {
-      const cell = cells.get(i);
-      if (cell.value.text.includes('#@monitor')) {
-        if (!isCodeCellModel(cell)) {
-          throw new Error('cell is not a code cell.');
-        }
-        this.selectedCell = cell;
-        this.selectedCellHTML = cellsFromDomModel.item(i);
-        this.insertAWSMonitor(cellsFromDomModel.item(i));
-        return;
-      }
-    }
-    this.showSnackbar();
-  }
-
-  searchForCellWithAnnotationm(panel: NotebookPanel): void {
-    const cellsFromDomModel = document.getElementsByClassName(
-      'lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper'
-    );
-    this.removeMonitor();
     this.insertAWSMonitor(
       cellsFromDomModel.item(panel.content.activeCellIndex)
     );
   }
 
   removeMonitor(): void {
-    console.log(this.monitorHTLM);
     if (this.monitorHTLM) {
       const element = document.getElementById('monitor');
       element.parentNode.removeChild(element);
       this.calculationsFinished = false;
       this.invokationFinished = false;
       this.startTime = null;
+      this.partitions = null;
     }
   }
 
@@ -291,8 +270,8 @@ export class AWSMonitorExtension
   }
 
   setTimeText(time: number, id: string): void {
-    document.getElementById(id).textContent =
-      (time - this.startTime) / 1000 + ' s';
+    const timeToDisplay = (time - this.startTime) / 1000;
+    document.getElementById(id).textContent = timeToDisplay.toFixed(2) + ' s';
   }
 }
 
