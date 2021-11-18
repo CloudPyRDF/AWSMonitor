@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+. expose_endpoints.sh
+
 jlpm
 jlpm build
 jupyter labextension install .
