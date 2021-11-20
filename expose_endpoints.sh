@@ -1,5 +1,6 @@
 aws_path=/DistRDF/Backends/AWS/
 
+root_path=/usr/local/lib/root/
 main_file=Backend.py
 lambda_file=AWS_utils.py
 
