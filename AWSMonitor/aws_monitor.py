@@ -2,6 +2,7 @@ from jupyter_server.base.handlers import JupyterHandler
 import json
 import tornado
 import os
+import re
 
 home = os.getenv('HOME')
 path = '/tmp/token_9238572973'
@@ -52,10 +53,17 @@ class MonitorHandler(JupyterHandler):
         if 'token' not in output:
             self.write(json.dumps({'status': 'Failed'}))
             return
+        
+        token_regex = re.search('token=(.+?) :', output)
+        token = token_regex.group(1) if token_regex else None
+        
+        port_regex = re.search('https?://.+:(.+?)/[? ]', output)
+        port = port_regex.group(1) if port_regex else None
+
         try:
             os.umask(0)
             with open(os.open(path, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as f:
-                f.write(output.split("=")[1].split(":")[0][:-1])
+                f.write(token + '\n' + port)
         except FileNotFoundError as e:
             pass
         self.write(json.dumps({'status': 'OK'}))
