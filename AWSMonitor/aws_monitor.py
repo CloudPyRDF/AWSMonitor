@@ -1,11 +1,10 @@
-from ipykernel.comm import Comm
 from jupyter_server.base.handlers import JupyterHandler
 import json
 import tornado
 import os
-import pathlib
 
 home = os.getenv('HOME')
+path = '/tmp/token_9238572973'
 
 invoked = 0
 finished = 0
@@ -54,8 +53,8 @@ class MonitorHandler(JupyterHandler):
             self.write(json.dumps({'status': 'Failed'}))
             return
         try:
-            #pathlib.Path(home + '/.notebook_metadata').mkdir(exist_ok=True)
-            with open('/tmp/token_9238572973', 'w') as f:
+            os.umask(0)
+            with open(os.open(path, os.O_CREAT | os.O_WRONLY, 0o600), 'w') as f:
                 f.write(output.split("=")[1].split(":")[0][:-1])
         except FileNotFoundError as e:
             pass
