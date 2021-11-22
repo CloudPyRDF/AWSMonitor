@@ -111,7 +111,7 @@ export class AWSMonitorExtension
     priority_high
   </span>
   <p>
-    Insert "#@monitor" in the cell under which you want the monitor to be displayed
+    Select cell under which you want monitor to be displayed
   </p>
   `;
 
@@ -119,14 +119,20 @@ export class AWSMonitorExtension
     panel: NotebookPanel,
     context: DocumentRegistry.IContext<INotebookModel>
   ): IDisposable {
-    this.info = 'Searching for a cell with PyRDF call...';
     this.dialogOpened = false;
     this.partitions = 0;
     this.created = 0;
     this.finished = 0; 
     const monitorButton = new ToolbarButton({
       label: 'AWS Monitor',
-      onClick: () => this.searchForCellWithAnnotation(panel)
+      onClick: () => {
+        if(!this.monitorButtonClicked){
+          this.showSnackbar();
+          this.monitorButtonClicked = true;
+        } else {
+          this.showMonitor(panel);
+        } 
+      }
     });
 
     this.sendPostRequestToSaveToken();
@@ -206,11 +212,7 @@ export class AWSMonitorExtension
     );
   }
 
-  addMonitor(panel: NotebookPanel): void {
-    this.searchForCellWithAnnotation(panel);
-  }
-
-  searchForCellWithAnnotation(panel: NotebookPanel): void {
+  showMonitor(panel: NotebookPanel): void {
     const cellsFromDomModel = document.getElementsByClassName(
       'lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper'
     );

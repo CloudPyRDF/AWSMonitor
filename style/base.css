@@ -128,6 +128,9 @@
 }
 
 #monitor-snackbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
     visibility: hidden;
     min-width: 250px;
     margin-left: -125px;
@@ -144,6 +147,10 @@
 
 #monitor-snackbar.show {
     visibility: visible;
-    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
-    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    -webkit-animation: aws-connector-fadein 0.5s, aws-connector-fadeout 0.5s 2.5s;
+    animation: aws-connector-fadein 0.5s, aws-connector-fadeout 0.5s 2.5s;
+}
+
+#monitor-snackbar p {
+    font-size: 15px;
 }
