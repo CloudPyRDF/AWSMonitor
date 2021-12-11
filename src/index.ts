@@ -7,7 +7,7 @@ import { ToolbarButton } from '@jupyterlab/apputils';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
-import { ICodeCellModel } from '@jupyterlab/cells';
+import { ICodeCellModel, IMarkdownCellModel } from '@jupyterlab/cells';
 
 import { ICommMsgMsg } from '@jupyterlab/services/lib/kernel/messages';
 
@@ -38,6 +38,8 @@ export class AWSMonitorExtension
 
   selectedCell: ICodeCellModel;
 
+  monitorCell: IMarkdownCellModel;
+
   selectedCellHTML: Element;
 
   lastOutput: string;
@@ -52,54 +54,56 @@ export class AWSMonitorExtension
 
   startTime: number;
 
+  currentIndex: number;
+
   kernel: IKernelConnection;
 
-  calculationsFinished = false;
+  calculationsFinished = true;
 
   invokationFinished = false;
 
   monitorButtonClicked = false;
 
   monitorInnerHTML = `
-  <div id="monitor-outer-wrapper">
+  <div class="monitor-outer-wrapper">
     <div id="monitor-wrapper">
       <div id="monitor-header">
-        <h1 id="monitor-title-text">AWSMonitor</h1>
-        <text id="partitions-text" class="monitor-title">Partitions: </text>
+        <p id="monitor-title-text">AWSMonitor</p>
+        <p id="partitions-text" class="monitor-title" style="margin-top: 13px">Partitions: </p>
       </div>
       <div id="monitor-column-titles-wrapper" class="monitor-content-wrapper">
 		<div id="status-text">
-			<text class="monitor-title">Status</text>
+			<p class="monitor-title" style="margin-top: 13px">Status</p>
 		</div>
-        <text class="monitor-title">Progress</text>
-        <text class="monitor-title">Duration</text>
+        <p class="monitor-title" style="margin-top: 13px">Progress</p>
+        <p class="monitor-title" style="margin-top: 13px">Duration</p>
       </div>
       <div class="monitor-info-row-wrapper monitor-content-wrapper">
-        <text class="monitor-title">Created</text>
+        <p class="monitor-title" style="margin-top: 13px">Created</p>
         <div class="monitor-info-row">
           <div class="monitor-progress-text">
-            <text id="created-number"></text>
+            <p id="created-number"></p>
           </div>
-          <div id="created-bar" class="progress-bar">
+          <div id="created-bar" class="progress-bar created-bar-color">
           </div>
         </div>
         <div class="time-container">
-          <text id="created-time" class="monitor-title"></text>
+          <p id="created-time" class="monitor-title" style="margin-top: 13px"></p>
         </div>
       </div>
       <div id="monitor-bars-divider">
       </div>
       <div class="monitor-info-row-wrapper monitor-content-wrapper">
-        <text class="monitor-title">Finished</text>
+        <p class="monitor-title" style="margin-top: 13px">Finished</p>
         <div class="monitor-info-row">
           <div class="monitor-progress-text">
-            <text id="finished-number"></text>
+            <p id="finished-number"></p>
           </div>
-          <div id="finished-bar" class="progress-bar">
+          <div id="finished-bar" class="progress-bar finished-bar-color">
           </div>
         </div>
 		<div class="time-container">
-			<text id="finished-time" class="monitor-title"></text>	
+			<p id="finished-time" class="monitor-title" style="margin-top: 13px"></p>	
 		</div>
       </div>
     </div>
@@ -126,11 +130,14 @@ export class AWSMonitorExtension
     const monitorButton = new ToolbarButton({
       label: 'AWS Monitor',
       onClick: () => {
-        if(!this.monitorButtonClicked){
+        if (!this.monitorButtonClicked) {
           this.showSnackbar();
           this.monitorButtonClicked = true;
         } else {
-          this.showMonitor(panel);
+          if (this.calculationsFinished) {
+            this.showMonitor(panel);
+            this.calculationsFinished = false;
+          }
         } 
       }
     });
@@ -144,6 +151,8 @@ export class AWSMonitorExtension
     this.addIconLink();
 
     this.addSnackbar();
+
+    this.addCSS();
 
     panel.toolbar.addItem('monitorButton', monitorButton);
 
@@ -165,6 +174,10 @@ export class AWSMonitorExtension
     document.body.appendChild(snackbar);
   }
 
+  addCSS() : void {
+
+  }
+
   showSnackbar(): void {
     const snackbar = document.getElementById('monitor-snackbar');
     snackbar.className = 'show';
@@ -178,7 +191,7 @@ export class AWSMonitorExtension
   }
 
   async retriveOperationsState(): Promise<void> {
-    if (this.monitorHTLM && !this.calculationsFinished) {
+    if (this.monitorCell && !this.calculationsFinished) {
       const settings = ServerConnection.makeSettings({});
       const serverResponse = await ServerConnection.makeRequest(
         URLExt.join(settings.baseUrl, '/AWSMonitor'),
@@ -196,13 +209,19 @@ export class AWSMonitorExtension
         }
         this.setFinished(response['FIN']);
         if (response['FIN'] === this.partitions) {
-          this.calculationsFinished = true;
+          this.resetStatus();
         }
       }
       console.log(response);
     }
   }
 
+  resetStatus(): void {
+    this.invokationFinished = false;
+    this.calculationsFinished = true;
+    this.partitions = null;
+    this.monitorCell.value.text = document.getElementById('monitor' + this.currentIndex).outerHTML;
+  }
   async sendPostRequestToSaveToken(): Promise<void> {
     const settings = ServerConnection.makeSettings({});
     ServerConnection.makeRequest(
@@ -213,13 +232,58 @@ export class AWSMonitorExtension
   }
 
   showMonitor(panel: NotebookPanel): void {
-    const cellsFromDomModel = document.getElementsByClassName(
-      'lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper'
+    // const cellsFromDomModel = document.getElementsByClassName(
+    //   'lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper'
+    // );
+    this.monitorCell = panel.content.model.contentFactory.createMarkdownCell({});
+    this.currentIndex = 0;
+    for (let i = 0; i < 50; i++) {
+      const monitorHTML = document.getElementById('monitor' + i);
+      if (monitorHTML === null) {
+        this.currentIndex = i;
+        break;
+      }
+    }
+    this.monitorCell.value.text = this.monitorInnerHTML;
+    this.monitorCell.value.text = this.monitorCell.value.text.replace(
+      '"partitions-text"',
+      '"partitions-text' + this.currentIndex + '"'
     );
-    this.removeMonitor();
-    this.insertAWSMonitor(
-      cellsFromDomModel.item(panel.content.activeCellIndex)
+    this.monitorCell.value.text = this.monitorCell.value.text.replace(
+      '"created-bar"',
+      '"created-bar' + this.currentIndex + '"'
     );
+    this.monitorCell.value.text = this.monitorCell.value.text.replace(
+      '"created-number"',
+      '"created-number' + this.currentIndex + '"'
+    );
+    this.monitorCell.value.text = this.monitorCell.value.text.replace(
+      '"created-time"',
+      '"created-time' + this.currentIndex + '"'
+    );
+    this.monitorCell.value.text = this.monitorCell.value.text.replace(
+      '"finished-bar"',
+      '"finished-bar' + this.currentIndex + '"'
+    );
+    this.monitorCell.value.text = this.monitorCell.value.text.replace(
+      '"finished-number"',
+      '"finished-number' + this.currentIndex + '"'
+    );
+    this.monitorCell.value.text = this.monitorCell.value.text.replace(
+      '"finished-time"',
+      '"finished-time' + this.currentIndex + '"'
+    );
+    this.monitorCell.value.text = this.monitorCell.value.text.replace(
+      'div class="monitor-outer-wrapper"',
+      'div id="monitor' + this.currentIndex + '" class="monitor-outer-wrapper"'
+    );
+    panel.content.model.cells.insert(
+      panel.content.activeCellIndex + 1,
+      this.monitorCell
+    );
+    // this.insertAWSMonitor(
+    //   cellsFromDomModel.item(panel.content.activeCellIndex)
+    // );
   }
 
   removeMonitor(): void {
@@ -248,28 +312,28 @@ export class AWSMonitorExtension
     if (!this.partitions && partitions !== 0) {
       this.partitions = partitions;
       this.startTime = Date.now();
-      document.getElementById('partitions-text').textContent =
+      document.getElementById('partitions-text' + this.currentIndex).textContent =
         'Partitions: ' + this.partitions;
     }
   }
 
   setCreated(created: number): void {
     if (created === this.partitions) {
-      this.setTimeText(Date.now(), 'created-time');
+      this.setTimeText(Date.now(), 'created-time' + this.currentIndex);
     }
-    document.getElementById('created-bar').style.width =
+    document.getElementById('created-bar' + this.currentIndex).style.width =
       ((250 * created) / this.partitions).toString() + 'px';
-    document.getElementById('created-number').textContent =
+    document.getElementById('created-number' + this.currentIndex).textContent =
       created + '/' + this.partitions;
   }
 
   setFinished(finished: number): void {
     if (finished === this.partitions) {
-      this.setTimeText(Date.now(), 'finished-time');
+      this.setTimeText(Date.now(), 'finished-time' + this.currentIndex);
     }
-    document.getElementById('finished-bar').style.width =
+    document.getElementById('finished-bar' + this.currentIndex).style.width =
       ((250 * finished) / this.partitions).toString() + 'px';
-    document.getElementById('finished-number').textContent =
+    document.getElementById('finished-number' + this.currentIndex).textContent =
       finished + '/' + this.partitions;
   }
 

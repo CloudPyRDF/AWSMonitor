@@ -21,7 +21,6 @@ class MonitorHandler(JupyterHandler):
         body = self.get_json_body()
         msg = body['msg']
         if msg == 'START':
-            self.reset_counters()
             nparts = body['npart']    
         if msg == 'INV':
             invoked = invoked + 1
@@ -38,10 +37,15 @@ class MonitorHandler(JupyterHandler):
         global nparts
         global invoked
         global finished
+        invoked_current = invoked
+        finished_current = finished
+        nparts_current = nparts
+        if finished == nparts and finished != 0:
+            self.reset_counters()
         self.write(json.dumps({
-            'npart': nparts,
-            'FIN': finished,
-            'INV': invoked
+            'npart': nparts_current,
+            'FIN': finished_current,
+            'INV': invoked_current
         }))
 
 
@@ -49,7 +53,6 @@ class MonitorHandler(JupyterHandler):
     def post(self):
         stream = os.popen('jupyter server list')
         output = stream.read()
-        print(output)
         if 'token' not in output:
             self.write(json.dumps({'status': 'Failed'}))
             return
@@ -75,4 +78,3 @@ class MonitorHandler(JupyterHandler):
         nparts = 0
         invoked = 0
         finished = 0
-        print(finished, invoked)
