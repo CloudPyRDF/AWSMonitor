@@ -9,8 +9,6 @@ import { DocumentRegistry } from '@jupyterlab/docregistry';
 
 import { ICodeCellModel, IMarkdownCellModel } from '@jupyterlab/cells';
 
-import { ICommMsgMsg } from '@jupyterlab/services/lib/kernel/messages';
-
 import { IKernelConnection } from '@jupyterlab/services/lib/kernel/kernel';
 
 import { ServerConnection } from '@jupyterlab/services';
@@ -63,6 +61,128 @@ export class AWSMonitorExtension
   invokationFinished = false;
 
   monitorButtonClicked = false;
+
+  stylesAdded = false;
+
+  styles = `
+  <style>
+    .monitor-outer-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #monitor-wrapper {
+        height: 141px;
+        width: 500px;
+      border-style: solid;
+      border-width: 1px;
+        margin-top: 8px;
+    }
+    #monitor-header {
+        height: 30px;
+        width: 485px;
+        background-color: #ffb029;
+        display: flex;
+        flex-direction: row;
+        justify-content: left;
+        align-items: center;
+        padding-left: 15px;
+    }
+
+    .monitor-title {
+      font-family: Roboto, sans-serif;
+      font-weight: 400;
+      font-size: 13px;
+    }
+
+    #monitor-title-text {
+      font-family: Roboto, sans-serif;
+      margin-right: 15px;
+      font-size: 16px;
+      margin-top: 14px;
+      font-weight: 550;
+    }
+
+    #finished-time {
+      
+    }
+
+    .monitor-content-wrapper {
+        height: 30px;
+        width: 426px;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding-left: 37px;
+        padding-right: 37px;
+    }
+
+    #monitor-column-titles-wrapper {
+        background-color: #d6d6d6;
+    }
+
+    .monitor-info-row-wrapper {
+        margin-top: 3px;
+    }
+
+    .monitor-info-row {
+        position:absolute;
+        margin-left: 83px;
+        height: 25px;
+        width: 250px;
+        border-style: solid;
+      border-width: 1px;
+        background-color: #d6d6d6;
+      border-radius: 4px;
+    }
+
+    .monitor-progress-text {
+        position: absolute;
+        height: 25px;
+        width: 250px;
+        text-align: center;
+        line-height: 25px;
+      font-family: Roboto, sans-serif;
+      font-size: 13px;
+      padding-left: 43%;
+    }
+
+    .progress-bar {
+        height: 25px;
+        width: 0;
+      border-radius: 2px;
+    }
+
+    .created-bar-color {
+        background-color: #80d2ff;
+    }
+
+    #status-text {
+      padding-left: 5px;
+    }
+
+    .finished-bar-color {
+        background-color: #5bfc60;
+    }
+
+    .time-container {
+      display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+      width: 50px
+    }
+
+    #monitor-bars-divider {
+        height: 5px;
+        width: 500px;
+        margin-top: 5px;
+        background-color: #d6d6d6;
+    }
+  </style>
+`;
 
   monitorInnerHTML = `
   <div class="monitor-outer-wrapper">
@@ -126,7 +246,7 @@ export class AWSMonitorExtension
     this.dialogOpened = false;
     this.partitions = 0;
     this.created = 0;
-    this.finished = 0; 
+    this.finished = 0;
     const monitorButton = new ToolbarButton({
       label: 'AWS Monitor',
       onClick: () => {
@@ -137,8 +257,11 @@ export class AWSMonitorExtension
           if (this.calculationsFinished) {
             this.showMonitor(panel);
             this.calculationsFinished = false;
+          } else {
+            this.setSnackbarAttributes('Current calculations has not finished yet');
+            this.showSnackbar();
           }
-        } 
+        }
       }
     });
 
@@ -151,8 +274,6 @@ export class AWSMonitorExtension
     this.addIconLink();
 
     this.addSnackbar();
-
-    this.addCSS();
 
     panel.toolbar.addItem('monitorButton', monitorButton);
 
@@ -174,8 +295,41 @@ export class AWSMonitorExtension
     document.body.appendChild(snackbar);
   }
 
-  addCSS() : void {
+  setSnackbarAttributes(text: string): void {
+    const snackbar = document.getElementById('monitor-snackbar');
+    if (snackbar !== null) {
+      snackbar.innerHTML = `
+      <span class="material-icons-outlined">
+        priority_high
+      </span>
+      <p>
+        ${text}
+      </p>
+    `;
+    }
+  }
 
+  addStyles(panel: NotebookPanel): void {
+    const notebook = panel.content;
+    const cells = notebook.model.cells;
+    console.log(cells.length);
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells.get(i);
+      if (cell.value.text.includes('<style>')) {
+        notebook.model.cells.remove(i);
+        console.log("styles deleted");
+        break;
+      }
+    }
+
+    const styleCell = notebook.model.contentFactory.createMarkdownCell({});
+    styleCell.value.text = this.styles;
+    // notebook.model.cells.push(styleCell);
+    const oldIndex = notebook.activeCellIndex;
+    notebook.model.cells.push(styleCell);
+    notebook.activeCellIndex = notebook.model.cells.length - 1;
+    notebook.activeCell.hide();
+    notebook.activeCellIndex = oldIndex;
   }
 
   showSnackbar(): void {
@@ -184,10 +338,6 @@ export class AWSMonitorExtension
     setTimeout(() => {
       snackbar.className = snackbar.className.replace('show', '');
     }, 3000);
-  }
-
-  handle(msg: ICommMsgMsg): void {
-    console.log(msg);
   }
 
   async retriveOperationsState(): Promise<void> {
@@ -235,6 +385,10 @@ export class AWSMonitorExtension
     // const cellsFromDomModel = document.getElementsByClassName(
     //   'lm-Widget p-Widget lm-Panel p-Panel jp-Cell-inputWrapper'
     // );
+    if (!this.stylesAdded) {
+      this.addStyles(panel);
+      this.stylesAdded = true;
+    }
     this.monitorCell = panel.content.model.contentFactory.createMarkdownCell({});
     this.currentIndex = 0;
     for (let i = 0; i < 50; i++) {
