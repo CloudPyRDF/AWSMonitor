@@ -2,7 +2,7 @@
 set -e
 
 jlpm
-jlpm build
+#jlpm build
 jupyter labextension install .
 jlpm build
 jupyter lab build
