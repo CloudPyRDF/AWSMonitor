@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 
 jlpm
-#jlpm build
+jlpm build
 jupyter labextension install .
 jlpm build
 jupyter lab build
